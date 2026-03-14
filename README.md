@@ -64,6 +64,19 @@ which provides accessible, elegant Lie algebra tools for nearly any manifold use
 
 ## How To
 
+Run the node by specifying the configuration name (without the `.yaml` extension):
+
+```shell
+ros2 launch limoncello limoncello.launch.py config_name:=cat16x
+```
+
+The launch file loads the configuration from `<limoncello_package>/config/<config_name>.yaml`.
+Optional launch arguments:
+
+```shell
+ros2 launch limoncello limoncello.launch.py config_name:=cat16x rviz:=true use_sim_time:=false
+```
+
 Most parameters are documented directly in each configuration file. However,
 special attention should be paid to those related to `sensors.calibration`,
 `sensors.time_offset`, `sensors.extrinsics`, and `sensors.intrinsics`.
