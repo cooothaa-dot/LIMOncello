@@ -304,7 +304,8 @@ public:
 
     PointCloudT::Ptr deskewed    = deskew(raw, state_, interpolated, offset, sweep_time);
     PointCloudT::Ptr downsampled = voxel_grid(deskewed);
-    PointCloudT::Ptr filtered    = filter(downsampled, state_.isometry() * state_.L2I_isometry());
+    PointCloudT::Ptr filtered    = filter(downsampled, 
+                                          cfg.sensors.extrinsics.imu2baselink * state_.L2I_isometry());
 
     if (filtered->points.empty()) {
       RCLCPP_ERROR(get_logger(), "Filtered cloud is empty!");
