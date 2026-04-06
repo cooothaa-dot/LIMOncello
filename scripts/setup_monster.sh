@@ -34,8 +34,15 @@ cp -r LIMOncello/livox_ros_driver2 . 2>/dev/null || true
 
 cd $WS
 source /opt/ros/jazzy/setup.bash
+
+# Build livox stubs truoc (limoncello phu thuoc vao chung)
 colcon build --symlink-install \
-  --allow-overriding livox_interfaces livox_ros_driver livox_ros_driver2
+  --allow-overriding livox_interfaces livox_ros_driver livox_ros_driver2 \
+  --packages-select livox_interfaces livox_ros_driver livox_ros_driver2
+
+# Source stubs roi moi build limoncello
+source $WS/install/setup.bash
+colcon build --symlink-install --packages-select limoncello
 
 echo "=== [5/5] Verify ==="
 source $WS/install/setup.bash
