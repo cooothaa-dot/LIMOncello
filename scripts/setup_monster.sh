@@ -23,7 +23,7 @@ if [ -d "LIMOncello" ]; then
   git submodule update --init --recursive
   cd ..
 else
-  git clone --recurse-submodules git@github.com:cooothaa-dot/LIMOncello.git
+  git clone --recurse-submodules https://github.com/cooothaa-dot/LIMOncello.git
 fi
 
 # Copy livox stub packages ra src level (colcon khong recurse vao trong package)
