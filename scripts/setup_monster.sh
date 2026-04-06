@@ -8,7 +8,8 @@ echo "=== [2/5] Cai dependencies ==="
 sudo apt update && sudo apt install -y \
   libyaml-cpp-dev libfmt-dev libboost-all-dev libtbb-dev \
   ros-jazzy-pcl-ros ros-jazzy-pcl-conversions \
-  ros-jazzy-tf2 ros-jazzy-tf2-ros ros-jazzy-tf2-eigen
+  ros-jazzy-tf2 ros-jazzy-tf2-ros ros-jazzy-tf2-eigen \
+  python3-colcon-common-extensions
 
 echo "=== [3/5] Tao workspace ==="
 WS=~/ros2_ws_limo
