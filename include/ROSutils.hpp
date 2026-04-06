@@ -48,14 +48,46 @@ Imu fromROS(const sensor_msgs::msg::Imu::ConstSharedPtr& in) {
 // Livox CustomMsg
 template <typename MsgT>
 static void fromROS_livox(const MsgT& msg, PointCloudT& raw) {
-  raw.points.resize(msg.point_num);
-  
-  std::vector<int> idx(msg.point_num);
+  // Use the smaller of point_num and actual array size to avoid OOB access
+  size_t n = std::min((size_t)msg.point_num, msg.points.size());
+  raw.points.resize(n);
+
+  std::vector<int> idx(n);
   std::iota(idx.begin(), idx.end(), 0);
+
+  // Prefer timebase (absolute ns since epoch) when available; fall back to header.stamp
+  double base_ns;
+  if (msg.timebase != 0) {
+    base_ns = (double)msg.timebase;
+  } else {
+    base_ns = (double)rclcpp::Time(msg.header.stamp).seconds() * 1e9;
+  }
+
+  // One-time debug print for the first Livox message
+  static bool printed = false;
+  if (!printed) {
+    printed = true;
+    double hdr_ns = (double)rclcpp::Time(msg.header.stamp).seconds() * 1e9;
+    fprintf(stderr,
+      "[LIVOX DEBUG] header.stamp=%.6f s  timebase=%lu (%.6f s)  base_ns=%.6f s"
+      "  point_num=%u  points.size()=%zu\n",
+      rclcpp::Time(msg.header.stamp).seconds(),
+      (unsigned long)msg.timebase, msg.timebase * 1e-9,
+      base_ns * 1e-9, msg.point_num, msg.points.size());
+    if (n > 0) {
+      fprintf(stderr,
+        "[LIVOX DEBUG] first pt offset_time=%u (%.9f s)  last pt offset_time=%u (%.9f s)\n",
+        msg.points[0].offset_time, msg.points[0].offset_time * 1e-9,
+        msg.points[n-1].offset_time, msg.points[n-1].offset_time * 1e-9);
+      fprintf(stderr,
+        "[LIVOX DEBUG] expected end_stamp = %.6f s\n",
+        (base_ns + msg.points[n-1].offset_time) * 1e-9);
+    }
+  }
 
   std::for_each(
     std::execution::par_unseq,
-    idx.begin(), 
+    idx.begin(),
     idx.end(),
     [&](int i) {
       const auto& in = msg.points[i];
@@ -65,14 +97,13 @@ static void fromROS_livox(const MsgT& msg, PointCloudT& raw) {
       p.y = in.y;
       p.z = in.z;
       p.intensity = (float)in.reflectivity;
-      double t_ns = (double)rclcpp::Time(msg.header.stamp).seconds()*1e9
-                     + (double)in.offset_time;
+      double t_ns = base_ns + (double)in.offset_time;
       p.timestamp = t_ns;
 
       return p;
     }
   );
-} 
+}
 
 void fromROS(const livox_ros_driver2::msg::CustomMsg& msg, PointCloudT& raw) { 
   fromROS_livox(msg, raw); }
