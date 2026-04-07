@@ -9,7 +9,6 @@ import sys
 import sqlite3
 import struct
 import os
-import yaml
 
 def decode_cdr_string(data, offset):
     length = struct.unpack_from('<I', data, offset)[0]
@@ -107,13 +106,11 @@ def main():
 
     meta_file = os.path.join(bag_dir, 'metadata.yaml')
     if os.path.exists(meta_file):
+        print("=== Bag Metadata (raw) ===")
         with open(meta_file) as f:
-            meta = yaml.safe_load(f)
-        print("=== Bag Metadata ===")
-        for tm in meta.get('rosbag2_bagfile_information', {}).get('topics_with_message_count', []):
-            tp = tm.get('topic_metadata', {})
-            cnt = tm.get('message_count', '?')
-            print(f"  {tp.get('name','?')}  [{tp.get('type','?')}]  count={cnt}")
+            for line in f:
+                if any(k in line for k in ('name:', 'type:', 'message_count:')):
+                    print(' ', line.rstrip())
         print()
 
     db3_files = [f for f in os.listdir(bag_dir) if f.endswith('.db3')]
