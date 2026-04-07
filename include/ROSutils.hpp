@@ -55,33 +55,29 @@ static void fromROS_livox(const MsgT& msg, PointCloudT& raw) {
   std::vector<int> idx(n);
   std::iota(idx.begin(), idx.end(), 0);
 
-  // Prefer timebase (absolute ns since epoch) when available; fall back to header.stamp
-  double base_ns;
-  if (msg.timebase != 0) {
-    base_ns = (double)msg.timebase;
-  } else {
-    base_ns = (double)rclcpp::Time(msg.header.stamp).seconds() * 1e9;
-  }
+  // Base time from header.stamp (Unix seconds → nanoseconds)
+  double base_ns = (double)rclcpp::Time(msg.header.stamp).seconds() * 1e9;
 
-  // One-time debug print for the first Livox message
+  // One-time debug print to verify actual runtime field values
   static bool printed = false;
   if (!printed) {
     printed = true;
-    double hdr_ns = (double)rclcpp::Time(msg.header.stamp).seconds() * 1e9;
     fprintf(stderr,
-      "[LIVOX DEBUG] header.stamp=%.6f s  timebase=%lu (%.6f s)  base_ns=%.6f s"
+      "[LIVOX DEBUG] header.stamp=%.9f s  timebase=%lu (%.3f s)"
       "  point_num=%u  points.size()=%zu\n",
       rclcpp::Time(msg.header.stamp).seconds(),
       (unsigned long)msg.timebase, msg.timebase * 1e-9,
-      base_ns * 1e-9, msg.point_num, msg.points.size());
+      msg.point_num, msg.points.size());
     if (n > 0) {
+      double end_ns = base_ns + (double)msg.points[n-1].offset_time;
       fprintf(stderr,
-        "[LIVOX DEBUG] first pt offset_time=%u (%.9f s)  last pt offset_time=%u (%.9f s)\n",
-        msg.points[0].offset_time, msg.points[0].offset_time * 1e-9,
+        "[LIVOX DEBUG] first offset_time=%u (%.6f s)  last offset_time=%u (%.6f s)\n",
+        msg.points[0].offset_time,   msg.points[0].offset_time   * 1e-9,
         msg.points[n-1].offset_time, msg.points[n-1].offset_time * 1e-9);
       fprintf(stderr,
-        "[LIVOX DEBUG] expected end_stamp = %.6f s\n",
-        (base_ns + msg.points[n-1].offset_time) * 1e-9);
+        "[LIVOX DEBUG] expected end_stamp = %.9f s\n", end_ns * 1e-9);
+    } else {
+      fprintf(stderr, "[LIVOX DEBUG] WARNING: 0 points in this message!\n");
     }
   }
 
@@ -97,8 +93,7 @@ static void fromROS_livox(const MsgT& msg, PointCloudT& raw) {
       p.y = in.y;
       p.z = in.z;
       p.intensity = (float)in.reflectivity;
-      double t_ns = base_ns + (double)in.offset_time;
-      p.timestamp = t_ns;
+      p.timestamp = base_ns + (double)in.offset_time;
 
       return p;
     }
